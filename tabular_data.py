@@ -24,9 +24,11 @@ def combine_description_strings(df: pd.DataFrame) -> pd.DataFrame:
     This method removes all rows in a DataFrame that contain no description and converts the description
     into a single string rather than a list of strings
 
-    df: Pandas Dataframe - The Dataframe that contains the Description field that will be cleaned
+    Parameters:
+        df: Pandas Dataframe - The Dataframe that contains the Description field that will be cleaned
 
-    returns: Pandas Dataframe - DataFrame with a cleaned up Description field
+    Returns:
+        Pandas Dataframe - DataFrame with a cleaned up Description field
     '''
 
      # Drop records with missing descriptions
@@ -44,9 +46,11 @@ def set_default_feature_values(df: pd.DataFrame) -> pd.DataFrame:
     This method replaces any empty values to 1 for the following columns:
     guests, beds, bathrooms, bedrooms
 
-    df: Pandas Dataframe - The Dataframe that will update the empty values to 1
+    Parameters:
+        df: Pandas Dataframe - The Dataframe that will update the empty values to 1
 
-    returns: Pandas Dataframe - DataFrame with default values applied
+    Returns:
+        Pandas Dataframe - DataFrame with default values applied
     '''
     
     default_values = {'guests': 1, 'beds': 1, 'bathrooms': 1, 'bedrooms': 1}
@@ -60,9 +64,11 @@ def clean_tabular_data(df: pd.DataFrame) -> pd.DataFrame:
     '''
     This method calls all the assocaited methods to clean the dataframe
 
-    df: Pandas Dataframe - The Dataframe that is to be cleaned
+    Parameters:
+        df: Pandas Dataframe - The Dataframe that is to be cleaned
 
-    returns: Pandas Dataframe - DataFrame with cleaned up data
+    Returns:
+        Pandas Dataframe - DataFrame with cleaned up data
     '''
 
     df = remove_rows_with_missing_ratings(df)
@@ -75,10 +81,12 @@ def load_airbnb(df: pd.DataFrame, label: str) -> tuple:
     '''
     This method gets the list of features and labels of the data
 
-    df: Pandas Dataframe - The Dataframe that contains the features and labels
-    label: str - The name of the column that will be the label
+    Parameters:
+        df: Pandas Dataframe - The Dataframe that contains the features and labels
+        label: str - The name of the column that will be the label
 
-    returns: tuple - A tuple of features and labels
+    Returns:
+        tuple - A tuple of features and labels
     '''
 
     features = df.drop(columns=[label])
@@ -93,4 +101,6 @@ if __name__ == "__main__":
     airbnb_df = pd.read_csv('listing.csv', delimiter=',')
     airbnb_df = clean_tabular_data(airbnb_df)
     features, labels = load_airbnb(airbnb_df, 'Price_Night')
+    print(features)
+    print(labels)
     
