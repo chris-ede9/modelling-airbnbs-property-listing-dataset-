@@ -77,7 +77,7 @@ def clean_tabular_data(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-def load_airbnb(df: pd.DataFrame, label: str) -> tuple:
+def load_airbnb(df: pd.DataFrame, labels: str) -> tuple:
     '''
     This method gets the list of features and labels of the data
 
@@ -89,8 +89,8 @@ def load_airbnb(df: pd.DataFrame, label: str) -> tuple:
         tuple - A tuple of features and labels
     '''
 
-    features = df.drop(columns=[label])
-    labels = df[label]
+    features = df.drop(columns=[labels])
+    labels = df[labels]
 
     # Filter out columns containing text data for the features
     features = features.select_dtypes(include='number')

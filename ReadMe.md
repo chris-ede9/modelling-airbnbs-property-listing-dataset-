@@ -18,7 +18,7 @@
 
 > The goal for this milestone was to create some machine learning models to predict the price of the listing per night and evaluate them.
 
->> The source file is modelling.py
+>> The source file is modelling.py, class RegressionModelling
 
 - Task 1: Created a simple regression model to predict the nightly cost of each listing.
 
@@ -32,4 +32,22 @@
 
 - Task 6: Ran different models to improve performance of the chosen regression model. These models included Decision Trees, Random Forests and Gradient Boosting.
 
-- Task 7: After running all the models the best overall model was found - RandomForestRegressor. Please note that this was only based on a limited amount of hyperparameter combinations being used and other models like GradientBoostingRegressor had an RMSE which was of a similar range. Further analysis is required to see if there are better hyperparameters available to improve performance.
+- Task 7: After running all the models the best overall model was found - RandomForestRegressor. Please note that this was only based on a limited amount of hyperparameter combinations being used and other models like GradientBoostingRegressor had an RMSE which was of a similar range.
+
+### Milestone 3 - Create a Classification model
+
+> The goal for this milestone was to create some machine learning models to predict the Category of the listing based on the numerical features.
+
+>> The source file is modelling.py, class ClassificationModelling
+
+- Task 1: Created a simple classification model to predict the category of each listing.
+
+- Task 2: Evaluated the classification model preformance by computing the key measures, Accurarcy, the F1 score, the precision and the recall for both the training and test sets.
+
+- Task 3: Created a function to tune the hyperparameters of the model using methods form sklearn, i.e GridSearchCV.
+
+- Task 4: Created a function that would save a model to a specified folder, along with the hyperparameters and metrics in json files.
+
+- Task 5: Ran different models to improve performance of the chosen regression model. These models included Decision Trees, Random Forests and Gradient Boosting.
+
+- Task 6: After running all the models the best overall model was found - RandomForestClassifier. However the Accuracy score is low on all models and further analysis is required to see if there is a better model available based on the hyperparameters.
