@@ -1,8 +1,3 @@
-import joblib, json
-import numpy as np
-import os
-import pandas as pd
-
 from itertools import product
 from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor, RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import SGDClassifier, SGDRegressor
@@ -10,8 +5,18 @@ from sklearn.metrics import accuracy_score, f1_score, mean_squared_error, precis
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from tabular_data import clean_tabular_data, load_airbnb
+import joblib, json
+import numpy as np
+import os
+import pandas as pd
+import torch
 
 class Modelling:
+    '''
+    Core module for modelling an AirBNB DataFrame loaded from listing.csv to determine the best model to make predictions against the data.
+
+    Best models will be saved in a specified folder locally so can be reused in future.
+    '''
 
     def __init__(self, labels) -> None:
 
@@ -38,8 +43,12 @@ class Modelling:
         os.makedirs(folder, exist_ok=True)
 
         # Save the model
-        model_path = os.path.join(folder, 'model.joblib')
-        joblib.dump(model, model_path)
+        if isinstance(model, torch.nn.Module):
+            model_path = os.path.join(folder, 'model.pt')
+            torch.save(model, model_path)
+        else:
+            model_path = os.path.join(folder, 'model.joblib')
+            joblib.dump(model, model_path)
 
         # Save the hyperparameters
         hyperparameters_path = os.path.join(folder, 'hyperparameters.json')
@@ -149,6 +158,9 @@ class Modelling:
         
 
 class RegressionModelling(Modelling):
+    '''
+    Regression Modelling module tunes specific Regression models based on specified hyperparameters to find the best metrics for that model.
+    '''
 
     def __init__(self, labels) -> None:
         super().__init__(labels)
@@ -224,7 +236,7 @@ class RegressionModelling(Modelling):
         Perform hyperparameter tuning using GridSearchCV
 
         Parameters:
-            model - The regression model to be tuned
+            model_class - The regression model to be tuned
             X_train - Training features
             y_train - Training labels
             X_val - Validation features
@@ -238,9 +250,10 @@ class RegressionModelling(Modelling):
             best_params - Best hyperparameters found during the grid search
             performance_metrics: dict - Dictionary containing performance metrics on the validation set
         """
+        print("Tuning model -", model_class.__class__.__name__, ":", hyperparameters)
 
         # Create GridSearchCV object with the provided model, hyperparamters and scoring metric
-        grid_search = GridSearchCV(estimator=model_class, param_grid=hyperparameters, scoring='neg_mean_squared_error', cv=5, error_score='raise') 
+        grid_search = GridSearchCV(estimator=model_class, param_grid=hyperparameters, scoring='neg_mean_squared_error', cv=5, error_score='raise')
 
         # Convert the data to NumPy arrays (removing feature names for warning message)
         X_train = X_train.values
@@ -311,19 +324,19 @@ class RegressionModelling(Modelling):
                 'max_features': ['sqrt', 'log2', None]
             }),
             (RandomForestRegressor(), {
-                'n_estimators': [50, 100, 200],
-                'max_depth': [None, 10, 20],
-                'min_samples_split': [2, 5, 10],
-                'min_samples_leaf': [1, 2, 4],
-                'max_features': ['sqrt', 'log2', None]
+                'n_estimators': [50, 100],
+                'max_depth': [None, 10],
+                'min_samples_split': [2, 5],
+                'min_samples_leaf': [1, 2],
+                'max_features': ['sqrt', 'log2']
             }),
             (GradientBoostingRegressor(), {
-                'n_estimators': [50, 100, 200],
-                'learning_rate': [0.01, 0.1, 0.2],
-                'max_depth': [3, 5, 10],
-                'min_samples_split': [2, 5, 10],
-                'min_samples_leaf': [1, 2, 4],
-                'max_features': ['sqrt', 'log2', None]
+                'n_estimators': [50, 100],
+                'learning_rate': [0.01, 0.1],
+                'max_depth': [3, 5],
+                'min_samples_split': [2, 5],
+                'min_samples_leaf': [1, 2],
+                'max_features': ['sqrt', 'log2']
             })
         ]
 
@@ -345,14 +358,18 @@ class RegressionModelling(Modelling):
             folder = 'models/regression/' + model.__class__.__name__
 
             # Print the best hyperparameters and performance metrics for that model
-            print(best_model.__class__.__name__, ":")
+            print("Best Results for", best_model.__class__.__name__, ":")
             print(best_hyperparameters)
             print(performance_metrics)
+            print()
 
             # Save the model, hyperparameters and performance metrics
             self.save_model(best_model, best_hyperparameters, performance_metrics, folder)
 
 class ClassificationModelling(Modelling):
+    '''
+    Classification Modelling module tunes specific Classification models based on specified hyperparameters to find the best metrics for that model.
+    '''
 
     def __init__(self, labels) -> None:
         super().__init__(labels)
@@ -377,6 +394,7 @@ class ClassificationModelling(Modelling):
             best_params - Best hyperparameters found during the grid search
             performance_metrics: dict - Dictionary containing performance metrics on the validation set
         """
+        print("Tuning model -", model_class.__class__.__name__, ":", hyperparameters)
 
         # Create GridSearchCV object with the provided model, hyperparamters and scoring metric
         grid_search = GridSearchCV(estimator=model_class, param_grid=hyperparameters, scoring='accuracy', cv=5, error_score='raise') 
@@ -459,19 +477,19 @@ class ClassificationModelling(Modelling):
                 'max_features': ['sqrt', 'log2', None]
             }),
             (RandomForestClassifier(), {
-                'n_estimators': [50, 100, 200],
-                'max_depth': [None, 10, 20],
-                'min_samples_split': [2, 5, 10],
-                'min_samples_leaf': [1, 2, 4],
-                'max_features': ['sqrt', 'log2', None]
+                'n_estimators': [50, 100],
+                'max_depth': [None, 10],
+                'min_samples_split': [2, 5],
+                'min_samples_leaf': [1, 2],
+                'max_features': ['sqrt', 'log2']
             }),
             (GradientBoostingClassifier(), {
-                'n_estimators': [50, 100, 200],
-                'learning_rate': [0.01, 0.05, 0.1],
-                'max_depth': [3, 5, 10],
-                'min_samples_split': [2, 5, 10],
-                'min_samples_leaf': [1, 2, 4],
-                'max_features': ['sqrt', 'log2', None]
+                'n_estimators': [50, 100],
+                'learning_rate': [0.01, 0.05],
+                'max_depth': [3, 5],
+                'min_samples_split': [2, 5],
+                'min_samples_leaf': [1, 2],
+                'max_features': ['sqrt', 'log2']
             })
         ]
 
@@ -493,28 +511,34 @@ class ClassificationModelling(Modelling):
             folder = 'models/classification/' + model.__class__.__name__
 
             # Print the best hyperparameters and performance metrics for that model
-            print(best_model.__class__.__name__, ":")
+            print("Best Results for", best_model.__class__.__name__, ":")
             print(best_hyperparameters)
             print(performance_metrics)
+            print()
 
             # Save the model, hyperparameters and performance metrics
             self.save_model(best_model, best_hyperparameters, performance_metrics, folder)
 
 if __name__ == "__main__":
+
+    # Regression Modelling test code:
     regression_model = RegressionModelling(labels='Price_Night')
     regression_model.evaluate_all_models()
     model, hyperparameters, performance_metrics = regression_model.find_best_model(root_folder='models/regression')
 
-    print("Best Model:")
+    print("Best Overall Regression Model:")
     print(model.__class__.__name__)
     print(hyperparameters)
     print(performance_metrics)
+    print()
     
+    # Classification Modelling test code:
     classification_model = ClassificationModelling(labels='Category')
     classification_model.evaluate_all_models()
     model, hyperparameters, performance_metrics = classification_model.find_best_model(root_folder='models/classification')
 
-    print("Best Model:")
+    print("Best Overall Classification Model:")
     print(model.__class__.__name__)
     print(hyperparameters)
     print(performance_metrics)
+    print()
