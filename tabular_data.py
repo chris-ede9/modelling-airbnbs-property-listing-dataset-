@@ -77,30 +77,30 @@ def clean_tabular_data(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-def load_airbnb(df: pd.DataFrame, labels: str) -> tuple:
+def load_airbnb(df: pd.DataFrame, label: str) -> tuple:
     '''
     This method gets the list of features and labels of the data
 
     Parameters:
-        df: Pandas Dataframe - The Dataframe that contains the features and labels
+        df: Pandas Dataframe - The Dataframe that contains the features and label
         label: str - The name of the column that will be the label
 
     Returns:
         tuple - A tuple of features and labels
     '''
 
-    features = df.drop(columns=[labels])
-    labels = df[labels]
+    features = df.drop(columns=[label])
+    label = df[label]
 
     # Filter out columns containing text data for the features
     features = features.select_dtypes(include='number')
 
-    return features, labels
+    return features, label
 
 if __name__ == "__main__":
     airbnb_df = pd.read_csv('listing.csv', delimiter=',')
     airbnb_df = clean_tabular_data(airbnb_df)
-    features, labels = load_airbnb(airbnb_df, 'Price_Night')
+    features, label = load_airbnb(airbnb_df, 'Price_Night')
     print(features)
-    print(labels)
+    print(label)
     

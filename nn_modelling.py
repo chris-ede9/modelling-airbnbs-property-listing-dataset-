@@ -20,13 +20,13 @@ class AirbnbNightlyPriceRegressionDataset(Dataset):
     Loads the AirBNB data into a Dataset returning any items as a Torch tensor
     '''
 
-    def __init__(self):
+    def __init__(self, label):
         super().__init__()
 
         # Load the tabular data from the CSV file
         self.df = pd.read_csv('listing.csv', delimiter=',')
         self.df = clean_tabular_data(self.df)
-        self.X, self.y = load_airbnb(self.df, 'Price_Night')
+        self.X, self.y = load_airbnb(self.df, label)
 
     def __getitem__(self, idx):
 
@@ -69,7 +69,7 @@ class NeuralNetworkModelling(Modelling):
     Models can be trained individually or part of list of different hyperparameters to determine the best hyperparameters to use.
     '''
 
-    def __init__(self, labels='') -> None:
+    def __init__(self, label='') -> None:
         # Base class required as the model is loaded in AirbnbNightlyPriceRegressionDataset for this modelling
         pass
 
@@ -287,7 +287,8 @@ class NeuralNetworkModelling(Modelling):
         
         return config_list
 
-    def find_best_nn(self, train_loader, val_loader, test_loader, input_size, output_size, num_epochs):
+    def find_best_nn(self, train_loader: DataLoader, val_loader: DataLoader, test_loader: DataLoader, input_size: int, output_size: int,
+                     label: str, num_epochs: int) -> Tuple[NN, dict, dict]:
         """
         Finds the best neural network model by training with different configurations
         
@@ -297,6 +298,7 @@ class NeuralNetworkModelling(Modelling):
             test_loader: DataLoader - Data loader for the test dataset
             input_size: int - Size of the input features
             output_size: int - Size of the output
+            label: str - The label name that is being predicted
             num_epochs: int - Number of epochs for training
 
         Returns:
@@ -304,14 +306,11 @@ class NeuralNetworkModelling(Modelling):
             dict - Hyperparameters of the best model
             dict - Performance metrics of the best model
         """
-        # Define lists of hyperparameters to try
-        optimisers = ['SGD', 'ADAM']
-        learning_rates = [0.0001, 0.001]
-        hidden_layer_widths = [4, 8]
-        model_depths = [1, 2]
+        # Get list of hyperparameters to try from config yaml file
+        config = self.get_nn_config('nn_config.yaml')
         
         # Generate configurations
-        configs = self.generate_nn_configs(optimisers, learning_rates, hidden_layer_widths, model_depths)
+        configs = self.generate_nn_configs(config['OPTIMISER'], config['LEARNING_RATE'], config['HIDDEN_LAYER_WIDTH'], config['MODEL_DEPTH'])
         
         # Store the best model results
         best_model = None
@@ -348,13 +347,13 @@ class NeuralNetworkModelling(Modelling):
         current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
         # Set the folder name where the files should be saved by a timestamp
-        folder = os.path.join('neural_networks', 'regression', current_datetime)
+        folder = os.path.join('neural_networks', 'regression', f'label_{label}', current_datetime)
 
         # Save the model, hyperparameters and performance metrics
         self.save_model(best_model, best_hyperparameters, best_metrics, folder)
 
         # Save all hyperparameters to a JSON file
-        hyperparameters_path = os.path.join('neural_networks', 'regression', current_datetime, 'all_hyperparameters.json')
+        hyperparameters_path = os.path.join('neural_networks', 'regression', f'label_{label}', current_datetime, 'all_hyperparameters.json')
         with open(hyperparameters_path, 'w') as hyperparameters_file:
             for hyperparam in all_hyperparameters:
                 json.dump(hyperparam, hyperparameters_file)
@@ -365,36 +364,41 @@ class NeuralNetworkModelling(Modelling):
 if __name__ == "__main__":
     # Neural Network test code:
     
-    # Create an instance of the AirBNB dataset 
-    dataset = AirbnbNightlyPriceRegressionDataset()
+    # Create an instance of the AirBNB dataset
+    labels = ['Price_Night', 'bedrooms']
+    for label in labels:
+        dataset = AirbnbNightlyPriceRegressionDataset(label=label)
 
-    # Define the size of train, validation and testing sets
-    train_size = int(0.7 * len(dataset))
-    val_size = int(0.15 * len(dataset))
-    test_size = len(dataset) - train_size - val_size
+        # Define the size of train, validation and testing sets
+        train_size = int(0.7 * len(dataset))
+        val_size = int(0.15 * len(dataset))
+        test_size = len(dataset) - train_size - val_size
 
-    # Split the dataset into train, validation and test sets
-    train_dataset, val_dataset, test_dataset = random_split(dataset, [train_size, val_size, test_size])
+        # Split the dataset into train, validation and test sets
+        train_dataset, val_dataset, test_dataset = random_split(dataset, [train_size, val_size, test_size])
 
-    # Define batch size for data loaders
-    batch_size = 16
+        # Define batch size for data loaders
+        batch_size = 16
 
-    # Create data loaders for train, validation and test sets with shuffling
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+        # Create data loaders for train, validation and test sets with shuffling
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+        val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
+        test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
-    # Define the input size based on the training set size and output size for the model
-    input_size = len(next(iter(train_loader))[0][0])
-    output_size = 1
+        # Define the input size based on the training set size and output size for the model
+        input_size = len(next(iter(train_loader))[0][0])
+        output_size = 1
 
-    # Create an instance of the Neural Network Modelling class
-    nn_model = NeuralNetworkModelling()
+        # Create an instance of the Neural Network Modelling class
+        nn_model = NeuralNetworkModelling()
 
-    # Get the best Neural Network Model available
-    best_model, best_hyperparameters, best_metrics = nn_model.find_best_nn(train_loader, val_loader, test_loader, input_size, output_size, num_epochs=50)
+        # Get the best Neural Network Model available
+        print(f"*** Finding best neural network model for label - {label} ***")
+        print()
+        best_model, best_hyperparameters, best_metrics = nn_model.find_best_nn(train_loader, val_loader, test_loader, input_size, output_size, label, num_epochs=50)
 
-    # Print the results of the best model:
-    print()
-    print(f"Best Model Hyperparameters -", best_hyperparameters)
-    print(f"Performance Metrics -", best_metrics)
+        # Print the results of the best model:
+        print()
+        print(f"Best Model Hyperparameters -", best_hyperparameters)
+        print(f"Performance Metrics -", best_metrics)
+        print()

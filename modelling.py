@@ -18,12 +18,12 @@ class Modelling:
     Best models will be saved in a specified folder locally so can be reused in future.
     '''
 
-    def __init__(self, labels) -> None:
+    def __init__(self, label: str) -> None:
 
-        # Load the dataset into a Pandas DataFrame, clean it and produce the features and labels
+        # Load the dataset into a Pandas DataFrame, clean it and produce the features and label
         self.df = pd.read_csv('listing.csv', delimiter=',')
         self.df = clean_tabular_data(self.df)
-        self.features, self.labels = load_airbnb(self.df, labels)
+        self.features, self.label = load_airbnb(self.df, label)
 
     def save_model(self, model, hyperparameters: dict, performance_metrics: dict, folder: str):
         '''
@@ -59,6 +59,8 @@ class Modelling:
         metrics_path = os.path.join(folder, 'metrics.json')
         with open(metrics_path, 'w') as f:
             json.dump(performance_metrics, f)
+
+        print(f"The model has been saved to the following folder - {folder}")
 
     def find_best_model(self, root_folder: str):
         '''
@@ -162,8 +164,10 @@ class RegressionModelling(Modelling):
     Regression Modelling module tunes specific Regression models based on specified hyperparameters to find the best metrics for that model.
     '''
 
-    def __init__(self, labels) -> None:
-        super().__init__(labels)
+    def __init__(self, label: str) -> None:
+        super().__init__(label)
+
+        self.regression_folder = f'models/regression/label_{label}/'
 
     def custom_tune_regression_model_hyperparameters(
             self, model_class, X_train, y_train, X_val, y_val, X_test, y_test, hyperparameters: dict):
@@ -250,6 +254,7 @@ class RegressionModelling(Modelling):
             best_params - Best hyperparameters found during the grid search
             performance_metrics: dict - Dictionary containing performance metrics on the validation set
         """
+        print()
         print("Tuning model -", model_class.__class__.__name__, ":", hyperparameters)
 
         # Create GridSearchCV object with the provided model, hyperparamters and scoring metric
@@ -306,7 +311,7 @@ class RegressionModelling(Modelling):
         '''
 
         # Split the data into training, validation and testing sets
-        X_train, X_temp, y_train, y_temp = train_test_split(self.features, self.labels, test_size=0.3)
+        X_train, X_temp, y_train, y_temp = train_test_split(self.features, self.label, test_size=0.3)
         X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5)
 
         # Define a list of tuples, each containing the model class and its hyperparameters
@@ -355,13 +360,12 @@ class RegressionModelling(Modelling):
             )
 
             # Set the folder name where the files should be saved
-            folder = 'models/regression/' + model.__class__.__name__
+            folder = self.regression_folder + model.__class__.__name__
 
             # Print the best hyperparameters and performance metrics for that model
             print("Best Results for", best_model.__class__.__name__, ":")
             print(best_hyperparameters)
             print(performance_metrics)
-            print()
 
             # Save the model, hyperparameters and performance metrics
             self.save_model(best_model, best_hyperparameters, performance_metrics, folder)
@@ -371,8 +375,10 @@ class ClassificationModelling(Modelling):
     Classification Modelling module tunes specific Classification models based on specified hyperparameters to find the best metrics for that model.
     '''
 
-    def __init__(self, labels) -> None:
-        super().__init__(labels)
+    def __init__(self, label: str) -> None:
+        super().__init__(label)
+
+        self.classification_folder = f'models/classification/label_{label}/'
 
     def tune_classification_model_hyperparameters(
             self, model_class, X_train, y_train, X_val, y_val, X_test, y_test, hyperparameters: dict):
@@ -394,6 +400,7 @@ class ClassificationModelling(Modelling):
             best_params - Best hyperparameters found during the grid search
             performance_metrics: dict - Dictionary containing performance metrics on the validation set
         """
+        print()
         print("Tuning model -", model_class.__class__.__name__, ":", hyperparameters)
 
         # Create GridSearchCV object with the provided model, hyperparamters and scoring metric
@@ -458,7 +465,7 @@ class ClassificationModelling(Modelling):
         '''
 
         # Split the data into training, validation and testing sets
-        X_train, X_temp, y_train, y_temp = train_test_split(self.features, self.labels, test_size=0.3)
+        X_train, X_temp, y_train, y_temp = train_test_split(self.features, self.label, test_size=0.3)
         X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5)
 
         # Define a list of tuples, each containing the model class and its hyperparameters
@@ -508,13 +515,12 @@ class ClassificationModelling(Modelling):
             )
 
             # Set the folder name where the files should be saved
-            folder = 'models/classification/' + model.__class__.__name__
+            folder = self.classification_folder + model.__class__.__name__
 
             # Print the best hyperparameters and performance metrics for that model
             print("Best Results for", best_model.__class__.__name__, ":")
             print(best_hyperparameters)
             print(performance_metrics)
-            print()
 
             # Save the model, hyperparameters and performance metrics
             self.save_model(best_model, best_hyperparameters, performance_metrics, folder)
@@ -522,22 +528,32 @@ class ClassificationModelling(Modelling):
 if __name__ == "__main__":
 
     # Regression Modelling test code:
-    regression_model = RegressionModelling(labels='Price_Night')
-    regression_model.evaluate_all_models()
-    model, hyperparameters, performance_metrics = regression_model.find_best_model(root_folder='models/regression')
 
-    print("Best Overall Regression Model:")
-    print(model.__class__.__name__)
-    print(hyperparameters)
-    print(performance_metrics)
-    print()
+    # Train the regression models for labels - Price_Night & bedrooms
+    labels = ['Price_Night', 'bedrooms']
+    for label in labels:
+        print(f"*** Finding best model for label - {label} ***")
+
+        regression_model = RegressionModelling(label=label)
+        regression_model.evaluate_all_models()
+        model, hyperparameters, performance_metrics = regression_model.find_best_model(root_folder=regression_model.regression_folder)
+
+        print()
+        print(f"*** Best Overall Regression Model (label = {label}) ***")
+        print(model.__class__.__name__)
+        print(hyperparameters)
+        print(performance_metrics)
+        print()
     
     # Classification Modelling test code:
-    classification_model = ClassificationModelling(labels='Category')
-    classification_model.evaluate_all_models()
-    model, hyperparameters, performance_metrics = classification_model.find_best_model(root_folder='models/classification')
+    print(f"*** Finding best model for label - Category ***")
 
-    print("Best Overall Classification Model:")
+    classification_model = ClassificationModelling(label='Category')
+    classification_model.evaluate_all_models()
+    model, hyperparameters, performance_metrics = classification_model.find_best_model(root_folder=classification_model.classification_folder)
+
+    print()
+    print("*** Best Overall Classification Model (label = Category)  ***")
     print(model.__class__.__name__)
     print(hyperparameters)
     print(performance_metrics)
